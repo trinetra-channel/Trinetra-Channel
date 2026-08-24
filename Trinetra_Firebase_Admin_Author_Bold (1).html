@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trinetra Channel — Firebase Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f4f6;color:#172033;font-family:Arial,"Noto Sans Devanagari","Mangal",sans-serif}
+header{background:#111827;color:#fff;padding:18px 16px}
+.wrap{max-width:950px;margin:auto}
+.brand{font-size:22px;font-weight:800}.sub{font-size:13px;color:#cbd5e1}
+.card{background:#fff;margin:24px auto;padding:22px;border-radius:16px;box-shadow:0 4px 18px #0001}
+input,textarea{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
+label{display:block;font-weight:700;margin:14px 0 7px}
+button{border:0;border-radius:10px;padding:12px 16px;font-weight:800;cursor:pointer}
+.primary{background:#dc2626;color:#fff;width:100%;margin-top:18px}
+.secondary{background:#e5e7eb;color:#172033}
+.danger{background:#fee2e2;color:#991b1b}
+.publish{background:#dcfce7;color:#166534}
+.status-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800;margin-left:6px}
+.logout{background:#e5e7eb;float:right}
+.home-btn{
+  background:#16a34a;color:#fff;text-decoration:none;
+  float:right;padding:12px 16px;border-radius:10px;
+  font-weight:800;margin-right:8px;
+}
+.home-btn:hover{background:#15803d}
+.error{color:#b91c1c;background:#fef2f2;padding:10px;border-radius:9px;margin-top:12px;display:none}
+.success{color:#166534;background:#f0fdf4;padding:10px;border-radius:9px;margin-top:12px;display:none}
+.notice{background:#fff7ed;border-left:4px solid #f97316;padding:12px;margin:15px 0;font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.preview{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:15px}
+.news-item{border:1px solid #e5e7eb;border-radius:12px;padding:15px;margin:12px 0}
+.news-item h3{margin:0 0 6px}.meta{font-size:13px;color:#667085}
+.news-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.news-photo{width:100%;max-height:260px;object-fit:cover;border-radius:10px;margin-top:10px}.hint{font-size:12px;color:#667085;margin-top:6px}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.photo-thumb{border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;position:relative;background:#f8fafc}
+.photo-thumb img{width:100%;height:120px;object-fit:cover;display:block}
+.photo-thumb span{position:absolute;left:6px;bottom:6px;background:#111827cc;color:#fff;border-radius:6px;padding:3px 6px;font-size:11px}
+.news-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.news-photo-grid img{width:100%;height:150px;object-fit:cover;border-radius:10px}
+@media(max-width:650px){.photo-grid,.news-photo-grid{grid-template-columns:1fr 1fr}}
+.news-video{width:100%;max-height:420px;border-radius:10px;margin-top:10px;background:#000}
+#admin{display:none}
+#loading{text-align:center;padding:15px;color:#667085}
+@media(max-width:650px){.row{grid-template-columns:1fr}}
+
+.photo-remove{
+  position:absolute;right:6px;top:6px;
+  width:28px;height:28px;border:0;border-radius:50%;
+  background:#dc2626;color:#fff;font-size:18px;font-weight:900;
+  cursor:pointer;line-height:28px;padding:0;
+  box-shadow:0 2px 7px #0005;
+}
+.photo-remove:hover{background:#991b1b}
+.video-file-row{
+  display:none;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:8px;
+}
+.video-remove{
+  border:0;border-radius:7px;background:#dc2626;color:#fff;
+  padding:7px 11px;font-weight:800;cursor:pointer;
+}
+
+
+/* VERY VISIBLE REMOVE BUTTONS */
+.photo-thumb{position:relative!important;overflow:visible!important}
+.photo-remove{
+  position:absolute!important;
+  right:-10px!important;
+  top:-10px!important;
+  z-index:999!important;
+  width:34px!important;
+  height:34px!important;
+  border:3px solid #fff!important;
+  border-radius:50%!important;
+  background:#e11d48!important;
+  color:#fff!important;
+  font-size:24px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  line-height:26px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-shadow:0 3px 10px #0008!important;
+}
+.photo-remove:hover{background:#991b1b!important;transform:scale(1.08)}
+
+
+#videoFileRow{display:none!important}
+#videoFileRow.show{display:flex!important}
+
+
+.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.rich-toolbar button{padding:8px 11px;border:1px solid #d1d5db;background:#f8fafc;border-radius:8px;font-weight:800}
+.rich-toolbar button:hover{background:#e5e7eb}
+.rich-editor{width:100%;min-height:220px;padding:13px;border:1px solid #d1d5db;border-radius:10px;font:inherit;line-height:1.7;background:#fff;outline:none}
+.rich-editor:focus{border-color:#dc2626;box-shadow:0 0 0 2px #dc262622}
+.rich-editor:empty:before{content:attr(data-placeholder);color:#98a2b3}
+.author-byline{font-size:13px;color:#667085;margin-top:7px}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">TRINETRA CHANNEL</div>
+    <div class="sub">Firebase Admin Panel — आपकी खबर, आपकी आवाज़</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section id="login" class="card">
+  <h2>🔐 Admin Login</h2>
+  <div class="notice">
+    यह Login Firebase Authentication से सुरक्षित है। केवल आपके Firebase Users में बनाए गए account से login करें।
+  </div>
+
+  <label>Admin Email</label>
+  <input id="email" type="email" autocomplete="username" placeholder="Admin email">
+
+  <label>Password</label>
+  <input id="password" type="password" autocomplete="current-password" placeholder="Admin Password">
+  <div class="hint" style="margin-top:6px">ईमेल पहले से भरा है। Password सुरक्षा के लिए खाली रखा गया है—अपना Firebase Admin Password खुद दर्ज करें।</div>
+
+  <div style="text-align:right;margin-top:9px">
+    <a href="#" id="forgotPasswordBtn"
+       style="color:#b91c1c;font-weight:800;text-decoration:none;font-size:14px">
+      🔑 पासवर्ड भूल गए?
+    </a>
+  </div>
+
+  <button id="loginBtn" class="primary">Login करें</button>
+  <div id="loginError" class="error"></div>
+</section>
+
+<section id="admin" class="card">
+  <a href="https://trinetrachannel.in/" class="home-btn">🏠 Home</a>
+  <button id="logoutBtn" class="logout">Logout</button>
+  <h2 id="formHeading">📰 नई खबर तैयार करें</h2>
+  <button type="button" id="openAdsBtn" class="secondary" style="margin:10px 0;width:100%;font-size:15px">📢 विज्ञापन जोड़ें / Manage करें</button>
+
+  <div class="notice">
+    खबर Save करने पर वह Firebase Firestore के <b>news</b> collection में सुरक्षित होगी।
+  </div>
+
+  <input id="editId" type="hidden">
+
+  <label>खबर की Headline</label>
+  <input id="title" placeholder="खबर की मुख्य हेडलाइन">
+
+  <div class="row">
+    <div>
+      <label>स्थान</label>
+      <input id="place" placeholder="प्रतापगढ़">
+    </div>
+    <div>
+      <label>तारीख</label>
+      <input id="date" type="date">
+    </div>
+  </div>
+
+  <label>🗂️ खबर की श्रेणी</label>
+  <select id="category" style="width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font:inherit;background:#fff">
+    <option value="देश">🇮🇳 देश</option>
+    <option value="प्रदेश">🏛️ प्रदेश</option>
+    <option value="स्थानीय" selected>📍 स्थानीय</option>
+  </select>
+
+  <label>✍️ खबर लिखने वाले का नाम (Author / Reporter)</label>
+  <input id="authorName" placeholder="जैसे — Vishal Tripathi">
+  <div class="author-byline">यह नाम खबर के साथ “By / रिपोर्टर” के रूप में सेव किया जाएगा।</div>
+
+  <label>पूरी खबर</label>
+  <div class="rich-toolbar" id="bodyToolbar">
+    <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+    <button type="button" data-cmd="underline" title="Underline"><u>U</u></button>
+    <button type="button" data-cmd="formatBlock" data-value="h3" title="Heading">H</button>
+    <button type="button" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+    <button type="button" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+    <button type="button" data-cmd="removeFormat" title="Formatting हटाएँ">Tx</button>
+  </div>
+  <div id="bodyEditor" class="rich-editor" contenteditable="true" data-placeholder="यहाँ पूरी खबर लिखें..."></div>
+  <textarea id="body" style="display:none"></textarea>
+  <div class="hint">किसी शब्द/लाइन को select करके <b>B</b> दबाएँ — वह Bold हो जाएगी।</div>
+
+  <label>📷 फोटो (अधिकतम 3)</label>
+  <input id="photo" type="file" accept="image/*" multiple>
+  <div class="hint">1, 2 या 3 फोटो एक साथ चुन सकते हैं।</div>
+  <div id="photoInfo" class="meta"></div>
+  <div id="photoPreview" class="photo-grid"></div>
+
+  <label>🎥 वीडियो (वैकल्पिक)</label>
+  <input id="video" type="file" accept="video/mp4,video/webm,video/quicktime">
+  <div id="videoFileRow" class="video-file-row">
+    <span id="videoFileName"></span>
+    <button type="button" id="videoRemove" class="video-remove">🗑️ वीडियो हटाएं</button>
+  </div>
+  <div id="videoInfo" class="meta">MP4/WebM बेहतर है। अधिकतम 100 MB। वीडियो Firebase Storage में upload होगा।</div>
+  <div id="uploadProgress" style="display:none;margin-top:8px;background:#e5e7eb;border-radius:8px;overflow:hidden">
+    <div id="uploadBar" style="height:10px;width:0;background:#dc2626"></div>
+  </div>
+
+  <button id="saveBtn" class="primary">☁️ Firebase में खबर Save करें</button>
+  <button id="draftBtn" class="secondary" style="margin-top:10px">💾 Draft सेव करें</button>
+  <button id="cancelEditBtn" class="secondary" style="margin-top:10px;display:none">❌ Edit Cancel करें</button>
+  <div class="hint" style="margin-top:10px">💡 Draft या Saved खबर नीचे सूची में दिखाई देगी। वहीं से ✏️ Edit, 🟢 Publish (Draft) और 🗑️ Delete कर सकते हैं।</div>
+
+  <div id="status" class="success"></div>
+  <div id="saveError" class="error"></div>
+
+  <div id="preview" class="preview"></div>
+</section>
+
+<section id="adsCard" class="card" style="display:none">
+  <h2 style="color:#b91c1c">📢 विज्ञापन प्रबंधन</h2>
+  <div class="notice">यहाँ से Home Page पर दिखने वाले विज्ञापन जोड़ें, Edit करें, Active/Inactive करें और Delete करें।</div>
+
+  <input id="adEditId" type="hidden">
+
+  <label>विज्ञापन का नाम</label>
+  <input id="adTitle" placeholder="जैसे — Shashi's Pickles">
+
+  <label>📷 विज्ञापन बैनर / फोटो</label>
+  <input id="adPhoto" type="file" accept="image/*">
+  <div class="hint">फोटो/बैनर 700 KB से छोटी रखें।</div>
+  <div id="adPhotoPreview" style="margin-top:10px"></div>
+
+  <div class="row">
+    <div>
+      <label>📞 मोबाइल नंबर</label>
+      <input id="adPhone" placeholder="जैसे 9918790730">
+    </div>
+    <div>
+      <label>🔗 Website / Link</label>
+      <input id="adLink" placeholder="https://example.com">
+    </div>
+  </div>
+
+  <label>📝 छोटा विवरण</label>
+  <textarea id="adDescription" style="min-height:100px" placeholder="विज्ञापन के बारे में जानकारी..."></textarea>
+
+  <label style="display:flex;align-items:center;gap:8px;font-weight:700">
+    <input id="adActive" type="checkbox" checked style="width:auto">
+    वेबसाइट पर विज्ञापन दिखाएँ
+  </label>
+
+  <button id="adSaveBtn" class="primary">📢 विज्ञापन Save करें</button>
+  <button id="adCancelBtn" class="secondary" style="margin-top:10px;display:none">❌ Edit Cancel करें</button>
+  <div id="adStatus" class="success"></div>
+  <div id="adError" class="error"></div>
+
+  <div style="margin-top:22px">
+    <h3>📋 सेव विज्ञापन</h3>
+    <div id="adsLoading" class="hint">विज्ञापन लोड हो रहे हैं...</div>
+    <div id="adsList"></div>
+  </div>
+</section>
+
+<section id="newsListCard" class="card" style="display:none">
+  <h2>📋 Firebase में सेव खबरें</h2>
+  <div id="loading">खबरें लोड हो रही हैं...</div>
+  <div id="newsList"></div>
+</section>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBUNUxgHf1pyNM9sjeOgYQaAwoAYff0J1Q",
+  authDomain: "trinetra-channel.firebaseapp.com",
+  projectId: "trinetra-channel",
+  storageBucket: "trinetra-channel.firebasestorage.app",
+  messagingSenderId: "262471448634",
+  appId: "1:262471448634:web:dde9e14c8b6a4ab761dd03",
+  measurementId: "G-YP35VXVMS6"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const $ = id => document.getElementById(id);
+
+function todayLocal(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+$("date").value = todayLocal();
+
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function paras(s){
+  return String(s || "").trim()
+    .split(/\n\s*\n/)
+    .filter(Boolean)
+    .map(x => "<p>" + esc(x).replace(/\n/g,"<br>") + "</p>")
+    .join("");
+}
+
+function editorHtml(){
+  return $("bodyEditor").innerHTML.trim();
+}
+
+function editorText(){
+  return $("bodyEditor").innerText.trim();
+}
+
+function syncEditorToBody(){
+  $("body").value = editorText();
+}
+
+function setEditorContent(htmlValue, textValue){
+  if(htmlValue){
+    $("bodyEditor").innerHTML = htmlValue;
+  }else{
+    $("bodyEditor").innerHTML = esc(textValue || "").replace(/\n/g,"<br>");
+  }
+  syncEditorToBody();
+}
+
+function renderBodyHtml(htmlValue, textValue){
+  if(htmlValue) return htmlValue;
+  return paras(textValue);
+}
+
+$("bodyToolbar").addEventListener("mousedown",(e)=>{
+  const btn=e.target.closest("button");
+  if(!btn) return;
+  e.preventDefault();
+  $("bodyEditor").focus();
+  const cmd=btn.dataset.cmd;
+  if(cmd==="formatBlock"){
+    document.execCommand(cmd,false,btn.dataset.value || "p");
+  }else{
+    document.execCommand(cmd,false,null);
+  }
+  syncEditorToBody();
+  preview();
+});
+
+$("bodyEditor").addEventListener("input",()=>{
+  syncEditorToBody();
+  preview();
+});
+
+function showError(id,msg){
+  $(id).textContent = msg;
+  $(id).style.display = "block";
+}
+function hide(id){$(id).style.display="none"}
+
+function preview(){
+  const author = $("authorName").value.trim();
+  $("preview").innerHTML =
+    "<h2>"+esc($("title").value || "Headline")+"</h2>" +
+    "<small>"+esc($("category").value || "स्थानीय")+" • "+esc($("place").value || "स्थान")+" | "+esc($("date").value || "तारीख")+"</small>" +
+    (author ? "<div class='author-byline'><b>By:</b> "+esc(author)+"</div>" : "") +
+    renderBodyHtml(editorHtml(), $("body").value || "खबर का preview यहाँ आएगा।");
+}
+
+function previewPhotos(){
+  const files=Array.from($("photo").files || []).slice(0,3);
+  const box=$("photoPreview");
+  box.innerHTML="";
+
+  files.forEach((file,i)=>{
+    const url=URL.createObjectURL(file);
+    const div=document.createElement("div");
+    div.className="photo-thumb";
+    div.style.position="relative";
+    div.style.overflow="visible";
+
+    const img=document.createElement("img");
+    img.src=url;
+    img.alt="फोटो "+(i+1);
+
+    const label=document.createElement("span");
+    label.textContent="फोटो "+(i+1);
+
+    const remove=document.createElement("button");
+    remove.type="button";
+    remove.className="photo-remove";
+    remove.textContent="×";
+    remove.title="यह फोटो हटाएं";
+    remove.setAttribute("aria-label","यह फोटो हटाएं");
+
+    remove.addEventListener("click",()=>{
+      const dt=new DataTransfer();
+      Array.from($("photo").files || []).forEach((f,index)=>{
+        if(index!==i) dt.items.add(f);
+      });
+      $("photo").files=dt.files;
+      previewPhotos();
+    });
+
+    div.appendChild(img);
+    div.appendChild(label);
+    div.appendChild(remove);
+    box.appendChild(div);
+  });
+
+  $("photoInfo").textContent=files.length
+    ? `${files.length} फोटो चुनी गई हैं। फोटो हटाने के लिए लाल × दबाएँ।`
+    : "कोई फोटो चयनित नहीं है।";
+}
+$("photo").addEventListener("change",previewPhotos);
+
+["title","place","date","authorName","category"].forEach(id => $(id).addEventListener("input",preview));
+preview();
+
+
+$("forgotPasswordBtn").addEventListener("click", async (e)=>{
+  e.preventDefault();
+
+  const email = $("email").value.trim();
+
+  if(!email){
+    showError("loginError","पहले अपना Admin Email लिखें।");
+    $("email").focus();
+    return;
+  }
+
+  hide("loginError");
+
+  try{
+    await sendPasswordResetEmail(auth, email);
+    const box = $("loginError");
+    box.textContent = "✅ Password reset link आपके email पर भेज दिया गया है। Inbox और Spam/Junk folder भी देखें।";
+    box.className = "success";
+    box.style.display = "block";
+  }catch(err){
+    let msg = "Password reset link नहीं भेजा जा सका।";
+    if(err.code === "auth/invalid-email") msg = "Email सही नहीं है।";
+    else if(err.code === "auth/user-not-found") msg = "इस email से कोई Firebase Admin account नहीं मिला।";
+    else if(err.code === "auth/too-many-requests") msg = "बहुत ज्यादा प्रयास हुए हैं। कुछ देर बाद फिर कोशिश करें।";
+
+    const box = $("loginError");
+    box.className = "error";
+    box.textContent = "❌ " + msg;
+    box.style.display = "block";
+  }
+});
+
+$("loginBtn").addEventListener("click", async () => {
+  hide("loginError");
+  const email = $("email").value.trim();
+  const password = $("password").value;
+
+  if(!email || !password){
+    showError("loginError","Email और Password दोनों भरना जरूरी है।");
+    return;
+  }
+
+  $("loginBtn").disabled = true;
+  $("loginBtn").textContent = "Login हो रहा है...";
+
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+  }catch(err){
+    showError("loginError","Login असफल: " + friendlyAuthError(err.code));
+  }finally{
+    $("loginBtn").disabled = false;
+    $("loginBtn").textContent = "Login करें";
+  }
+});
+
+function friendlyAuthError(code){
+  const map = {
+    "auth/invalid-credential":"Email या Password गलत है।",
+    "auth/invalid-email":"Email सही नहीं है।",
+    "auth/user-disabled":"यह User disabled है।",
+    "auth/too-many-requests":"बहुत अधिक प्रयास हुए हैं। थोड़ी देर बाद कोशिश करें।"
+  };
+  return map[code] || "कृपया Email और Password जाँचें।";
+}
+
+$("logoutBtn").addEventListener("click",async()=>{
+  try{
+    await signOut(auth);
+    window.location.href="https://trinetrachannel.in/";
+  }catch(err){
+    console.error(err);
+  }
+});
+
+$("draftBtn").addEventListener("click",async()=>{
+  hide("saveError");
+  hide("status");
+
+  const title=$("title").value.trim();
+  const place=$("place").value.trim();
+  const date=$("date").value;
+  syncEditorToBody();
+  const body=$("body").value.trim();
+  const bodyHtml=editorHtml();
+  const authorName=$("authorName").value.trim();
+  const category=$("category").value;
+  const editId=$("editId").value;
+
+  if(!title){
+    showError("saveError","Draft के लिए कम से कम Headline भरना जरूरी है।");
+    return;
+  }
+
+  $("draftBtn").disabled=true;
+  $("draftBtn").textContent="💾 Draft सेव हो रहा है...";
+
+  try{
+    const data={
+      title,place,date,body,bodyHtml,authorName,category,
+      status:"draft",
+      updatedAt:serverTimestamp(),
+      authorUid:auth.currentUser.uid,
+      authorEmail:auth.currentUser.email || ""
+    };
+
+    if(editId){
+      await updateDoc(doc(db,"news",editId),data);
+      $("status").textContent="✅ Draft सफलतापूर्वक Update हो गया।";
+    }else{
+      data.createdAt=serverTimestamp();
+      data.photo="";
+      data.photos=[];
+      data.videoUrl="";
+      await addDoc(collection(db,"news"),data);
+      $("status").textContent="✅ Draft Firebase में सेव हो गया। अब नीचे से Publish या Delete कर सकते हैं।";
+    }
+
+    $("status").style.display="block";
+    resetForm();
+    localStorage.removeItem("trinetraDraft");
+    await loadNews();
+  }catch(err){
+    console.error(err);
+    showError("saveError","Draft सेव नहीं हो सका: "+(err.message || err));
+  }finally{
+    $("draftBtn").disabled=false;
+    $("draftBtn").textContent="💾 Draft सेव करें";
+  }
+});
+
+function loadDraft(){
+  const raw = localStorage.getItem("trinetraDraft");
+  if(!raw) return;
+  try{
+    const d = JSON.parse(raw);
+    $("title").value = d.title || "";
+    $("place").value = d.place || "";
+    $("date").value = d.date || todayLocal();
+    $("authorName").value = d.authorName || "";
+    setEditorContent(d.bodyHtml || "", d.body || "");
+    preview();
+  }catch(e){}
+}
+
+function resetForm(){
+  $("editId").value="";
+  $("title").value="";
+  $("place").value="";
+  $("date").value=todayLocal();
+  $("category").value="स्थानीय";
+  $("authorName").value="";
+  $("body").value="";
+  $("bodyEditor").innerHTML="";
+  $("photo").value="";
+  $("photoPreview").innerHTML="";
+  $("video").value="";
+  $("videoFileName").textContent="";
+  $("videoFileRow").classList.remove("show");
+  $("photoInfo").textContent="";
+  $("videoInfo").textContent="MP4/WebM बेहतर है। अधिकतम 100 MB। वीडियो Firebase Storage में upload होगा।";
+  $("uploadProgress").style.display="none";
+  $("uploadBar").style.width="0";
+  $("formHeading").textContent="📰 नई खबर तैयार करें";
+  $("saveBtn").textContent="☁️ Firebase में खबर Save करें";
+  $("cancelEditBtn").style.display="none";
+  preview();
+}
+
+$("cancelEditBtn").addEventListener("click",resetForm);
+
+function readPhoto(file){
+  return new Promise((resolve,reject)=>{
+    if(!file){resolve("");return;}
+    if(file.size > 700 * 1024){
+      reject(new Error("फोटो 700 KB से छोटी रखें। Firebase Firestore document size की सीमा होती है।"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(reader.result);
+    reader.onerror = ()=>reject(new Error("फोटो पढ़ी नहीं जा सकी।"));
+    reader.readAsDataURL(file);
+  });
+}
+
+$("video").addEventListener("change",()=>{
+  const file=$("video").files?.[0];
+  if(file){
+    $("videoFileName").textContent="🎥 " + file.name;
+    $("videoFileRow").classList.add("show");
+  }else{
+    $("videoFileName").textContent="";
+    $("videoFileRow").classList.remove("show");
+  }
+});
+
+$("videoRemove").addEventListener("click",()=>{
+  $("video").value="";
+  $("videoFileName").textContent="";
+  $("videoFileRow").classList.remove("show");
+  $("videoInfo").textContent="वीडियो हटा दिया गया। नया वीडियो चाहें तो फिर से चुनें।";
+});
+
+$("saveBtn").addEventListener("click",async()=>{
+  hide("saveError");
+  hide("status");
+
+  const title=$("title").value.trim();
+  const place=$("place").value.trim();
+  const date=$("date").value;
+  syncEditorToBody();
+  const body=$("body").value.trim();
+  const bodyHtml=editorHtml();
+  const authorName=$("authorName").value.trim();
+  const category=$("category").value;
+  const editId=$("editId").value;
+  const photoFiles=Array.from($("photo").files || []).slice(0,3);
+
+  if(!title || !body){
+    showError("saveError","Headline और पूरी खबर भरना जरूरी है।");
+    return;
+  }
+
+  $("saveBtn").disabled=true;
+  $("saveBtn").textContent=editId ? "Update हो रहा है..." : "Firebase में Save हो रहा है...";
+
+  try{
+    let photos=[];
+    for(const file of photoFiles){
+      photos.push(await readPhoto(file));
+    }
+    const photo=photos[0] || "";
+
+    const videoFile=$("video").files[0];
+    if(videoFile && videoFile.size > 100 * 1024 * 1024){
+      throw new Error("वीडियो 100 MB से छोटा रखें।");
+    }
+    if(videoFile && !videoFile.type.startsWith("video/")){
+      throw new Error("कृपया सही video file चुनें।");
+    }
+
+    let videoUrl="";
+    if(videoFile){
+      $("uploadProgress").style.display="block";
+      $("uploadBar").style.width="0";
+      $("videoInfo").textContent="वीडियो upload हो रहा है...";
+
+      const safeName=videoFile.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      const videoPath="news-videos/"+Date.now()+"_"+safeName;
+      const storageRef=ref(storage,videoPath);
+      const uploadTask=uploadBytesResumable(storageRef,videoFile,{
+        contentType:videoFile.type
+      });
+
+      videoUrl=await new Promise((resolve,reject)=>{
+        uploadTask.on("state_changed",
+          snap=>{
+            const pct=Math.round((snap.bytesTransferred/snap.totalBytes)*100);
+            $("uploadBar").style.width=pct+"%";
+            $("videoInfo").textContent="वीडियो upload हो रहा है: "+pct+"%";
+          },
+          err=>reject(new Error("वीडियो upload नहीं हो सका: "+(err.code || err.message))),
+          async()=>{
+            try{
+              const url=await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }catch(err){reject(err);}
+          }
+        );
+      });
+    }
+
+    if(editId){
+      const data = {title,place,date,body,bodyHtml,authorName,category,status:"published",updatedAt:serverTimestamp()};
+      if(photo) data.photo=photo;
+      if(photos.length) data.photos=photos;
+      if(videoUrl) data.videoUrl=videoUrl;
+      await updateDoc(doc(db,"news",editId),data);
+      $("status").textContent="खबर और वीडियो सफलतापूर्वक Update हो गए।";
+    }else{
+      await addDoc(collection(db,"news"),{
+        title,place,date,body,bodyHtml,authorName,category,
+        status:"published",
+        photo: photo || "",
+        photos: photos,
+        videoUrl: videoUrl || "",
+        createdAt:serverTimestamp(),
+        authorUid: auth.currentUser.uid,
+        authorEmail: auth.currentUser.email || ""
+      });
+      $("status").textContent=videoUrl
+        ? "खबर और वीडियो Firebase में सफलतापूर्वक Save हो गए।"
+        : "खबर Firebase में सफलतापूर्वक Save हो गई।";
+    }
+
+    $("status").style.display="block";
+    resetForm();
+    await loadNews();
+  }catch(err){
+    console.error(err);
+    showError("saveError",err.message || "खबर Save नहीं हो सकी।");
+  }finally{
+    $("saveBtn").disabled=false;
+    $("saveBtn").textContent=$("editId").value ? "Update करें" : "☁️ Firebase में खबर Save करें";
+  }
+});
+
+async function loadNews(){
+  $("newsListCard").style.display="block";
+  $("loading").style.display="block";
+  $("newsList").innerHTML="";
+
+  try{
+    const q=query(collection(db,"news"),orderBy("createdAt","desc"));
+    const snap=await getDocs(q);
+
+    $("loading").style.display="none";
+
+    if(snap.empty){
+      $("newsList").innerHTML="<p>अभी Firebase में कोई खबर सेव नहीं है।</p>";
+      return;
+    }
+
+    snap.forEach(item=>{
+      const n=item.data();
+      const div=document.createElement("div");
+      div.className="news-item";
+
+      const safeBody=renderBodyHtml(n.bodyHtml || "", n.body || "");
+      div.innerHTML=
+        "<h3>"+esc(n.title || "बिना शीर्षक")+
+          (n.status==="draft" ? " <span class='status-badge' style='background:#fef3c7;color:#92400e'>DRAFT</span>" : " <span class='status-badge' style='background:#dcfce7;color:#166534'>PUBLISHED</span>")+
+          "</h3>"+
+        "<div class='meta'>"+esc(n.category || "स्थानीय")+" • "+esc(n.place || "स्थान")+" | "+esc(n.date || "तारीख")+"</div>"+
+        (n.photos?.length ? "<div class='news-photo-grid'>"+n.photos.slice(0,3).map((u,i)=>"<img src='"+esc(u)+"' alt='News photo "+(i+1)+"'>").join("")+"</div>" : (n.photo ? "<img class='news-photo' src='"+esc(n.photo)+"' alt='News photo'>" : ""))+
+        (n.videoUrl ? "<video class='news-video' controls preload='metadata' src='"+n.videoUrl+"'></video>" : "")+
+        "<p>"+safeBody+"</p>"+
+        "<div style='margin-top:14px;font-weight:800'>⚙️ खबर के विकल्प</div>"+
+        "<div class='news-actions'>"+
+        "<button class='secondary editBtn'>✏️ Edit</button>"+
+        (n.status==="draft" ? "<button class='publish publishBtn'>🟢 Publish</button>" : "")+
+        "<button class='danger deleteBtn'>🗑️ Delete</button>"+
+        "</div>";
+
+      div.querySelector(".editBtn").addEventListener("click",()=>editNews(item.id,n));
+      const publishBtn=div.querySelector(".publishBtn");
+      if(publishBtn) publishBtn.addEventListener("click",()=>publishNews(item.id));
+      div.querySelector(".deleteBtn").addEventListener("click",()=>deleteNews(item.id));
+      $("newsList").appendChild(div);
+    });
+  }catch(err){
+    $("loading").style.display="none";
+    showError("saveError","खबरें लोड नहीं हो सकीं: "+err.message);
+  }
+}
+
+function editNews(id,n){
+  $("editId").value=id;
+  $("title").value=n.title || "";
+  $("place").value=n.place || "";
+  $("date").value=n.date || todayLocal();
+  $("category").value=n.category || "स्थानीय";
+  $("authorName").value=n.authorName || "";
+  setEditorContent(n.bodyHtml || "", n.body || "");
+  $("photo").value="";
+  $("photoPreview").innerHTML="";
+  $("photoInfo").textContent=(n.photos?.length || n.photo) ? "पुरानी फोटो मौजूद है। नई फोटो चुनने पर वह replace होगी।" : "";
+  $("formHeading").textContent = n.status==="draft" ? "✏️ Draft Edit करें" : "✏️ खबर Edit करें";
+  $("saveBtn").textContent="Update करें";
+  $("cancelEditBtn").style.display="inline-block";
+  preview();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+async function publishNews(id){
+  if(!confirm("क्या आप इस Draft को Publish करना चाहते हैं?")) return;
+  try{
+    await updateDoc(doc(db,"news",id),{
+      status:"published",
+      publishedAt:serverTimestamp(),
+      updatedAt:serverTimestamp()
+    });
+    alert("खबर Publish हो गई।");
+    await loadNews();
+  }catch(err){
+    showError("saveError","Publish नहीं हो सका: "+err.message);
+  }
+}
+
+async function deleteNews(id){
+  if(!confirm("क्या आप यह खबर Delete करना चाहते हैं?")) return;
+  try{
+    await deleteDoc(doc(db,"news",id));
+    alert("खबर Delete हो गई।");
+    await loadNews();
+  }catch(err){
+    showError("saveError","Delete नहीं हो सका: "+err.message);
+  }
+}
+
+// ================= ADVERTISEMENT SYSTEM =================
+let adPhotoData = "";
+
+$("adPhoto").addEventListener("change", async ()=>{
+  const file = $("adPhoto").files?.[0];
+  $("adPhotoPreview").innerHTML = "";
+  adPhotoData = "";
+  if(!file) return;
+  try{
+    adPhotoData = await readPhoto(file);
+    $("adPhotoPreview").innerHTML =
+      '<img src="'+esc(adPhotoData)+'" style="width:100%;max-height:240px;object-fit:cover;border-radius:10px">';
+  }catch(err){
+    showAdError(err.message);
+    $("adPhoto").value = "";
+  }
+});
+
+function showAdError(msg){
+  $("adError").textContent = "❌ " + msg;
+  $("adError").style.display = "block";
+}
+function hideAdMessages(){
+  $("adError").style.display = "none";
+  $("adStatus").style.display = "none";
+}
+function resetAdForm(){
+  $("adEditId").value = "";
+  $("adTitle").value = "";
+  $("adPhone").value = "";
+  $("adLink").value = "";
+  $("adDescription").value = "";
+  $("adActive").checked = true;
+  $("adPhoto").value = "";
+  $("adPhotoPreview").innerHTML = "";
+  adPhotoData = "";
+  $("adSaveBtn").textContent = "📢 विज्ञापन Save करें";
+  $("adCancelBtn").style.display = "none";
+  hideAdMessages();
+}
+$("adCancelBtn").addEventListener("click",resetAdForm);
+
+$("adSaveBtn").addEventListener("click",async ()=>{
+  hideAdMessages();
+  const title=$("adTitle").value.trim();
+  const phone=$("adPhone").value.trim();
+  const link=$("adLink").value.trim();
+  const description=$("adDescription").value.trim();
+  const active=$("adActive").checked;
+  const editId=$("adEditId").value;
+
+  if(!title){ showAdError("विज्ञापन का नाम भरना जरूरी है।"); return; }
+  if(!editId && !adPhotoData){ showAdError("विज्ञापन की फोटो/बैनर चुनना जरूरी है।"); return; }
+
+  $("adSaveBtn").disabled=true;
+  $("adSaveBtn").textContent=editId ? "Update हो रहा है..." : "विज्ञापन Save हो रहा है...";
+
+  try{
+    const data={title,phone,link,description,active,updatedAt:serverTimestamp(),
+      authorUid:auth.currentUser.uid,authorEmail:auth.currentUser.email||""};
+    if(adPhotoData) data.photo=adPhotoData;
+
+    if(editId){
+      await updateDoc(doc(db,"ads",editId),data);
+      $("adStatus").textContent="✅ विज्ञापन सफलतापूर्वक Update हो गया।";
+    }else{
+      data.createdAt=serverTimestamp();
+      await addDoc(collection(db,"ads"),data);
+      $("adStatus").textContent="✅ विज्ञापन Firebase में Save हो गया।";
+    }
+    $("adStatus").style.display="block";
+    resetAdForm();
+    await loadAds();
+  }catch(err){
+    console.error(err);
+    showAdError("विज्ञापन Save नहीं हो सका: "+(err.message||err));
+  }finally{
+    $("adSaveBtn").disabled=false;
+    $("adSaveBtn").textContent="📢 विज्ञापन Save करें";
+  }
+});
+
+async function loadAds(){
+  $("adsLoading").style.display="block";
+  $("adsList").innerHTML="";
+  try{
+    const snap=await getDocs(collection(db,"ads"));
+    $("adsLoading").style.display="none";
+    if(snap.empty){
+      $("adsList").innerHTML="<p class='hint'>अभी कोई विज्ञापन सेव नहीं है।</p>";
+      return;
+    }
+    const items=[];
+    snap.forEach(item=>items.push({id:item.id,...item.data()}));
+    items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+
+    items.forEach(n=>{
+      const div=document.createElement("div");
+      div.className="ad-admin-item";
+      div.innerHTML=
+        "<h3>"+esc(n.title||"बिना नाम")+
+        (n.active
+          ? " <span class='ad-admin-status' style='background:#dcfce7;color:#166534'>ACTIVE</span>"
+          : " <span class='ad-admin-status' style='background:#fee2e2;color:#991b1b'>INACTIVE</span>")+
+        "</h3>"+
+        (n.photo ? "<img src='"+esc(n.photo)+"' alt='Advertisement'>" : "")+
+        (n.phone ? "<div class='meta'>📞 "+esc(n.phone)+"</div>" : "")+
+        (n.description ? "<p>"+esc(n.description)+"</p>" : "")+
+        "<div class='ad-admin-actions'>"+
+        "<button class='secondary adEditBtn'>✏️ Edit</button>"+
+        "<button class='publish adToggleBtn'>"+(n.active?"🔴 Inactive करें":"🟢 Active करें")+"</button>"+
+        "<button class='danger adDeleteBtn'>🗑️ Delete</button>"+
+        "</div>";
+      div.querySelector(".adEditBtn").addEventListener("click",()=>editAd(n.id,n));
+      div.querySelector(".adToggleBtn").addEventListener("click",()=>toggleAd(n.id,n.active));
+      div.querySelector(".adDeleteBtn").addEventListener("click",()=>deleteAd(n.id));
+      $("adsList").appendChild(div);
+    });
+  }catch(err){
+    $("adsLoading").style.display="none";
+    showAdError("विज्ञापन लोड नहीं हो सके: "+(err.message||err));
+  }
+}
+
+function editAd(id,n){
+  $("adEditId").value=id;
+  $("adTitle").value=n.title||"";
+  $("adPhone").value=n.phone||"";
+  $("adLink").value=n.link||"";
+  $("adDescription").value=n.description||"";
+  $("adActive").checked=n.active!==false;
+  $("adPhoto").value="";
+  adPhotoData=n.photo||"";
+  $("adPhotoPreview").innerHTML=n.photo
+    ? '<img src="'+esc(n.photo)+'" style="width:100%;max-height:240px;object-fit:cover;border-radius:10px">'
+    : "";
+  $("adSaveBtn").textContent="✏️ विज्ञापन Update करें";
+  $("adCancelBtn").style.display="inline-block";
+  window.scrollTo({top:$("adsCard").offsetTop-15,behavior:"smooth"});
+}
+
+async function toggleAd(id,current){
+  try{
+    await updateDoc(doc(db,"ads",id),{active:!current,updatedAt:serverTimestamp()});
+    await loadAds();
+  }catch(err){ showAdError("विज्ञापन की स्थिति बदल नहीं सकी: "+(err.message||err)); }
+}
+
+async function deleteAd(id){
+  if(!confirm("क्या आप यह विज्ञापन Delete करना चाहते हैं?")) return;
+  try{
+    await deleteDoc(doc(db,"ads",id));
+    alert("विज्ञापन Delete हो गया।");
+    await loadAds();
+  }catch(err){ showAdError("विज्ञापन Delete नहीं हो सका: "+(err.message||err)); }
+}
+// ================= END ADVERTISEMENT SYSTEM =================
+
+$("openAdsBtn").addEventListener("click",()=>{
+  const box = $("adsCard");
+  box.style.display = "block";
+  $("openAdsBtn").textContent = "📢 विज्ञापन सेक्शन खुला है";
+  box.scrollIntoView({behavior:"smooth",block:"start"});
+});
+
+
+onAuthStateChanged(auth,user=>{
+  if(user){
+    $("login").style.display="none";
+    $("admin").style.display="block";
+    $("newsListCard").style.display="block";
+    $("adsCard").style.display="none";
+    loadAds();
+    loadNews();
+  }else{
+    $("login").style.display="block";
+    $("admin").style.display="none";
+    $("newsListCard").style.display="none";
+    $("adsCard").style.display="none";
+  }
+});
+</script>
+</body>
+</html>
