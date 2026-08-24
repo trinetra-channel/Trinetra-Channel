@@ -94,6 +94,15 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:800;cursor:poin
 #videoFileRow{display:none!important}
 #videoFileRow.show{display:flex!important}
 
+
+.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.rich-toolbar button{padding:8px 11px;border:1px solid #d1d5db;background:#f8fafc;border-radius:8px;font-weight:800}
+.rich-toolbar button:hover{background:#e5e7eb}
+.rich-editor{width:100%;min-height:220px;padding:13px;border:1px solid #d1d5db;border-radius:10px;font:inherit;line-height:1.7;background:#fff;outline:none}
+.rich-editor:focus{border-color:#dc2626;box-shadow:0 0 0 2px #dc262622}
+.rich-editor:empty:before{content:attr(data-placeholder);color:#98a2b3}
+.author-byline{font-size:13px;color:#667085;margin-top:7px}
+
 </style>
 </head>
 <body>
@@ -164,8 +173,23 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:800;cursor:poin
     <option value="स्थानीय" selected>📍 स्थानीय</option>
   </select>
 
+  <label>✍️ खबर लिखने वाले का नाम (Author / Reporter)</label>
+  <input id="authorName" placeholder="जैसे — Vishal Tripathi">
+  <div class="author-byline">यह नाम खबर के साथ “By / रिपोर्टर” के रूप में सेव किया जाएगा।</div>
+
   <label>पूरी खबर</label>
-  <textarea id="body" style="min-height:220px" placeholder="यहाँ पूरी खबर paste करें..."></textarea>
+  <div class="rich-toolbar" id="bodyToolbar">
+    <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+    <button type="button" data-cmd="underline" title="Underline"><u>U</u></button>
+    <button type="button" data-cmd="formatBlock" data-value="h3" title="Heading">H</button>
+    <button type="button" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+    <button type="button" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+    <button type="button" data-cmd="removeFormat" title="Formatting हटाएँ">Tx</button>
+  </div>
+  <div id="bodyEditor" class="rich-editor" contenteditable="true" data-placeholder="यहाँ पूरी खबर लिखें..."></div>
+  <textarea id="body" style="display:none"></textarea>
+  <div class="hint">किसी शब्द/लाइन को select करके <b>B</b> दबाएँ — वह Bold हो जाएगी।</div>
 
   <label>📷 फोटो (अधिकतम 3)</label>
   <input id="photo" type="file" accept="image/*" multiple>
@@ -319,6 +343,52 @@ function paras(s){
     .join("");
 }
 
+function editorHtml(){
+  return $("bodyEditor").innerHTML.trim();
+}
+
+function editorText(){
+  return $("bodyEditor").innerText.trim();
+}
+
+function syncEditorToBody(){
+  $("body").value = editorText();
+}
+
+function setEditorContent(htmlValue, textValue){
+  if(htmlValue){
+    $("bodyEditor").innerHTML = htmlValue;
+  }else{
+    $("bodyEditor").innerHTML = esc(textValue || "").replace(/\n/g,"<br>");
+  }
+  syncEditorToBody();
+}
+
+function renderBodyHtml(htmlValue, textValue){
+  if(htmlValue) return htmlValue;
+  return paras(textValue);
+}
+
+$("bodyToolbar").addEventListener("mousedown",(e)=>{
+  const btn=e.target.closest("button");
+  if(!btn) return;
+  e.preventDefault();
+  $("bodyEditor").focus();
+  const cmd=btn.dataset.cmd;
+  if(cmd==="formatBlock"){
+    document.execCommand(cmd,false,btn.dataset.value || "p");
+  }else{
+    document.execCommand(cmd,false,null);
+  }
+  syncEditorToBody();
+  preview();
+});
+
+$("bodyEditor").addEventListener("input",()=>{
+  syncEditorToBody();
+  preview();
+});
+
 function showError(id,msg){
   $(id).textContent = msg;
   $(id).style.display = "block";
@@ -326,10 +396,12 @@ function showError(id,msg){
 function hide(id){$(id).style.display="none"}
 
 function preview(){
+  const author = $("authorName").value.trim();
   $("preview").innerHTML =
     "<h2>"+esc($("title").value || "Headline")+"</h2>" +
     "<small>"+esc($("category").value || "स्थानीय")+" • "+esc($("place").value || "स्थान")+" | "+esc($("date").value || "तारीख")+"</small>" +
-    paras($("body").value || "खबर का preview यहाँ आएगा।");
+    (author ? "<div class='author-byline'><b>By:</b> "+esc(author)+"</div>" : "") +
+    renderBodyHtml(editorHtml(), $("body").value || "खबर का preview यहाँ आएगा।");
 }
 
 function previewPhotos(){
@@ -379,7 +451,7 @@ function previewPhotos(){
 }
 $("photo").addEventListener("change",previewPhotos);
 
-["title","place","date","body","category"].forEach(id => $(id).addEventListener("input",preview));
+["title","place","date","authorName","category"].forEach(id => $(id).addEventListener("input",preview));
 preview();
 
 
@@ -464,7 +536,10 @@ $("draftBtn").addEventListener("click",async()=>{
   const title=$("title").value.trim();
   const place=$("place").value.trim();
   const date=$("date").value;
+  syncEditorToBody();
   const body=$("body").value.trim();
+  const bodyHtml=editorHtml();
+  const authorName=$("authorName").value.trim();
   const category=$("category").value;
   const editId=$("editId").value;
 
@@ -478,7 +553,7 @@ $("draftBtn").addEventListener("click",async()=>{
 
   try{
     const data={
-      title,place,date,body,category,
+      title,place,date,body,bodyHtml,authorName,category,
       status:"draft",
       updatedAt:serverTimestamp(),
       authorUid:auth.currentUser.uid,
@@ -494,466 +569,4 @@ $("draftBtn").addEventListener("click",async()=>{
       data.photos=[];
       data.videoUrl="";
       await addDoc(collection(db,"news"),data);
-      $("status").textContent="✅ Draft Firebase में सेव हो गया। अब नीचे से Publish या Delete कर सकते हैं।";
-    }
-
-    $("status").style.display="block";
-    resetForm();
-    localStorage.removeItem("trinetraDraft");
-    await loadNews();
-  }catch(err){
-    console.error(err);
-    showError("saveError","Draft सेव नहीं हो सका: "+(err.message || err));
-  }finally{
-    $("draftBtn").disabled=false;
-    $("draftBtn").textContent="💾 Draft सेव करें";
-  }
-});
-
-function loadDraft(){
-  const raw = localStorage.getItem("trinetraDraft");
-  if(!raw) return;
-  try{
-    const d = JSON.parse(raw);
-    $("title").value = d.title || "";
-    $("place").value = d.place || "";
-    $("date").value = d.date || todayLocal();
-    $("body").value = d.body || "";
-    preview();
-  }catch(e){}
-}
-
-function resetForm(){
-  $("editId").value="";
-  $("title").value="";
-  $("place").value="";
-  $("date").value=todayLocal();
-  $("category").value="स्थानीय";
-  $("body").value="";
-  $("photo").value="";
-  $("photoPreview").innerHTML="";
-  $("video").value="";
-  $("videoFileName").textContent="";
-  $("videoFileRow").classList.remove("show");
-  $("photoInfo").textContent="";
-  $("videoInfo").textContent="MP4/WebM बेहतर है। अधिकतम 100 MB। वीडियो Firebase Storage में upload होगा।";
-  $("uploadProgress").style.display="none";
-  $("uploadBar").style.width="0";
-  $("formHeading").textContent="📰 नई खबर तैयार करें";
-  $("saveBtn").textContent="☁️ Firebase में खबर Save करें";
-  $("cancelEditBtn").style.display="none";
-  preview();
-}
-
-$("cancelEditBtn").addEventListener("click",resetForm);
-
-function readPhoto(file){
-  return new Promise((resolve,reject)=>{
-    if(!file){resolve("");return;}
-    if(file.size > 700 * 1024){
-      reject(new Error("फोटो 700 KB से छोटी रखें। Firebase Firestore document size की सीमा होती है।"));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = ()=>resolve(reader.result);
-    reader.onerror = ()=>reject(new Error("फोटो पढ़ी नहीं जा सकी।"));
-    reader.readAsDataURL(file);
-  });
-}
-
-$("video").addEventListener("change",()=>{
-  const file=$("video").files?.[0];
-  if(file){
-    $("videoFileName").textContent="🎥 " + file.name;
-    $("videoFileRow").classList.add("show");
-  }else{
-    $("videoFileName").textContent="";
-    $("videoFileRow").classList.remove("show");
-  }
-});
-
-$("videoRemove").addEventListener("click",()=>{
-  $("video").value="";
-  $("videoFileName").textContent="";
-  $("videoFileRow").classList.remove("show");
-  $("videoInfo").textContent="वीडियो हटा दिया गया। नया वीडियो चाहें तो फिर से चुनें।";
-});
-
-$("saveBtn").addEventListener("click",async()=>{
-  hide("saveError");
-  hide("status");
-
-  const title=$("title").value.trim();
-  const place=$("place").value.trim();
-  const date=$("date").value;
-  const body=$("body").value.trim();
-  const category=$("category").value;
-  const editId=$("editId").value;
-  const photoFiles=Array.from($("photo").files || []).slice(0,3);
-
-  if(!title || !body){
-    showError("saveError","Headline और पूरी खबर भरना जरूरी है।");
-    return;
-  }
-
-  $("saveBtn").disabled=true;
-  $("saveBtn").textContent=editId ? "Update हो रहा है..." : "Firebase में Save हो रहा है...";
-
-  try{
-    let photos=[];
-    for(const file of photoFiles){
-      photos.push(await readPhoto(file));
-    }
-    const photo=photos[0] || "";
-
-    const videoFile=$("video").files[0];
-    if(videoFile && videoFile.size > 100 * 1024 * 1024){
-      throw new Error("वीडियो 100 MB से छोटा रखें।");
-    }
-    if(videoFile && !videoFile.type.startsWith("video/")){
-      throw new Error("कृपया सही video file चुनें।");
-    }
-
-    let videoUrl="";
-    if(videoFile){
-      $("uploadProgress").style.display="block";
-      $("uploadBar").style.width="0";
-      $("videoInfo").textContent="वीडियो upload हो रहा है...";
-
-      const safeName=videoFile.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-      const videoPath="news-videos/"+Date.now()+"_"+safeName;
-      const storageRef=ref(storage,videoPath);
-      const uploadTask=uploadBytesResumable(storageRef,videoFile,{
-        contentType:videoFile.type
-      });
-
-      videoUrl=await new Promise((resolve,reject)=>{
-        uploadTask.on("state_changed",
-          snap=>{
-            const pct=Math.round((snap.bytesTransferred/snap.totalBytes)*100);
-            $("uploadBar").style.width=pct+"%";
-            $("videoInfo").textContent="वीडियो upload हो रहा है: "+pct+"%";
-          },
-          err=>reject(new Error("वीडियो upload नहीं हो सका: "+(err.code || err.message))),
-          async()=>{
-            try{
-              const url=await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(url);
-            }catch(err){reject(err);}
-          }
-        );
-      });
-    }
-
-    if(editId){
-      const data = {title,place,date,body,category,status:"published",updatedAt:serverTimestamp()};
-      if(photo) data.photo=photo;
-      if(photos.length) data.photos=photos;
-      if(videoUrl) data.videoUrl=videoUrl;
-      await updateDoc(doc(db,"news",editId),data);
-      $("status").textContent="खबर और वीडियो सफलतापूर्वक Update हो गए।";
-    }else{
-      await addDoc(collection(db,"news"),{
-        title,place,date,body,category,
-        status:"published",
-        photo: photo || "",
-        photos: photos,
-        videoUrl: videoUrl || "",
-        createdAt:serverTimestamp(),
-        authorUid: auth.currentUser.uid,
-        authorEmail: auth.currentUser.email || ""
-      });
-      $("status").textContent=videoUrl
-        ? "खबर और वीडियो Firebase में सफलतापूर्वक Save हो गए।"
-        : "खबर Firebase में सफलतापूर्वक Save हो गई।";
-    }
-
-    $("status").style.display="block";
-    resetForm();
-    await loadNews();
-  }catch(err){
-    console.error(err);
-    showError("saveError",err.message || "खबर Save नहीं हो सकी।");
-  }finally{
-    $("saveBtn").disabled=false;
-    $("saveBtn").textContent=$("editId").value ? "Update करें" : "☁️ Firebase में खबर Save करें";
-  }
-});
-
-async function loadNews(){
-  $("newsListCard").style.display="block";
-  $("loading").style.display="block";
-  $("newsList").innerHTML="";
-
-  try{
-    const q=query(collection(db,"news"),orderBy("createdAt","desc"));
-    const snap=await getDocs(q);
-
-    $("loading").style.display="none";
-
-    if(snap.empty){
-      $("newsList").innerHTML="<p>अभी Firebase में कोई खबर सेव नहीं है।</p>";
-      return;
-    }
-
-    snap.forEach(item=>{
-      const n=item.data();
-      const div=document.createElement("div");
-      div.className="news-item";
-
-      const safeBody=esc(n.body || "").replace(/\n/g,"<br>");
-      div.innerHTML=
-        "<h3>"+esc(n.title || "बिना शीर्षक")+
-          (n.status==="draft" ? " <span class='status-badge' style='background:#fef3c7;color:#92400e'>DRAFT</span>" : " <span class='status-badge' style='background:#dcfce7;color:#166534'>PUBLISHED</span>")+
-          "</h3>"+
-        "<div class='meta'>"+esc(n.category || "स्थानीय")+" • "+esc(n.place || "स्थान")+" | "+esc(n.date || "तारीख")+"</div>"+
-        (n.photos?.length ? "<div class='news-photo-grid'>"+n.photos.slice(0,3).map((u,i)=>"<img src='"+esc(u)+"' alt='News photo "+(i+1)+"'>").join("")+"</div>" : (n.photo ? "<img class='news-photo' src='"+esc(n.photo)+"' alt='News photo'>" : ""))+
-        (n.videoUrl ? "<video class='news-video' controls preload='metadata' src='"+n.videoUrl+"'></video>" : "")+
-        "<p>"+safeBody+"</p>"+
-        "<div style='margin-top:14px;font-weight:800'>⚙️ खबर के विकल्प</div>"+
-        "<div class='news-actions'>"+
-        "<button class='secondary editBtn'>✏️ Edit</button>"+
-        (n.status==="draft" ? "<button class='publish publishBtn'>🟢 Publish</button>" : "")+
-        "<button class='danger deleteBtn'>🗑️ Delete</button>"+
-        "</div>";
-
-      div.querySelector(".editBtn").addEventListener("click",()=>editNews(item.id,n));
-      const publishBtn=div.querySelector(".publishBtn");
-      if(publishBtn) publishBtn.addEventListener("click",()=>publishNews(item.id));
-      div.querySelector(".deleteBtn").addEventListener("click",()=>deleteNews(item.id));
-      $("newsList").appendChild(div);
-    });
-  }catch(err){
-    $("loading").style.display="none";
-    showError("saveError","खबरें लोड नहीं हो सकीं: "+err.message);
-  }
-}
-
-function editNews(id,n){
-  $("editId").value=id;
-  $("title").value=n.title || "";
-  $("place").value=n.place || "";
-  $("date").value=n.date || todayLocal();
-  $("category").value=n.category || "स्थानीय";
-  $("body").value=n.body || "";
-  $("photo").value="";
-  $("photoPreview").innerHTML="";
-  $("photoInfo").textContent=(n.photos?.length || n.photo) ? "पुरानी फोटो मौजूद है। नई फोटो चुनने पर वह replace होगी।" : "";
-  $("formHeading").textContent = n.status==="draft" ? "✏️ Draft Edit करें" : "✏️ खबर Edit करें";
-  $("saveBtn").textContent="Update करें";
-  $("cancelEditBtn").style.display="inline-block";
-  preview();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-
-async function publishNews(id){
-  if(!confirm("क्या आप इस Draft को Publish करना चाहते हैं?")) return;
-  try{
-    await updateDoc(doc(db,"news",id),{
-      status:"published",
-      publishedAt:serverTimestamp(),
-      updatedAt:serverTimestamp()
-    });
-    alert("खबर Publish हो गई।");
-    await loadNews();
-  }catch(err){
-    showError("saveError","Publish नहीं हो सका: "+err.message);
-  }
-}
-
-async function deleteNews(id){
-  if(!confirm("क्या आप यह खबर Delete करना चाहते हैं?")) return;
-  try{
-    await deleteDoc(doc(db,"news",id));
-    alert("खबर Delete हो गई।");
-    await loadNews();
-  }catch(err){
-    showError("saveError","Delete नहीं हो सका: "+err.message);
-  }
-}
-
-// ================= ADVERTISEMENT SYSTEM =================
-let adPhotoData = "";
-
-$("adPhoto").addEventListener("change", async ()=>{
-  const file = $("adPhoto").files?.[0];
-  $("adPhotoPreview").innerHTML = "";
-  adPhotoData = "";
-  if(!file) return;
-  try{
-    adPhotoData = await readPhoto(file);
-    $("adPhotoPreview").innerHTML =
-      '<img src="'+esc(adPhotoData)+'" style="width:100%;max-height:240px;object-fit:cover;border-radius:10px">';
-  }catch(err){
-    showAdError(err.message);
-    $("adPhoto").value = "";
-  }
-});
-
-function showAdError(msg){
-  $("adError").textContent = "❌ " + msg;
-  $("adError").style.display = "block";
-}
-function hideAdMessages(){
-  $("adError").style.display = "none";
-  $("adStatus").style.display = "none";
-}
-function resetAdForm(){
-  $("adEditId").value = "";
-  $("adTitle").value = "";
-  $("adPhone").value = "";
-  $("adLink").value = "";
-  $("adDescription").value = "";
-  $("adActive").checked = true;
-  $("adPhoto").value = "";
-  $("adPhotoPreview").innerHTML = "";
-  adPhotoData = "";
-  $("adSaveBtn").textContent = "📢 विज्ञापन Save करें";
-  $("adCancelBtn").style.display = "none";
-  hideAdMessages();
-}
-$("adCancelBtn").addEventListener("click",resetAdForm);
-
-$("adSaveBtn").addEventListener("click",async ()=>{
-  hideAdMessages();
-  const title=$("adTitle").value.trim();
-  const phone=$("adPhone").value.trim();
-  const link=$("adLink").value.trim();
-  const description=$("adDescription").value.trim();
-  const active=$("adActive").checked;
-  const editId=$("adEditId").value;
-
-  if(!title){ showAdError("विज्ञापन का नाम भरना जरूरी है।"); return; }
-  if(!editId && !adPhotoData){ showAdError("विज्ञापन की फोटो/बैनर चुनना जरूरी है।"); return; }
-
-  $("adSaveBtn").disabled=true;
-  $("adSaveBtn").textContent=editId ? "Update हो रहा है..." : "विज्ञापन Save हो रहा है...";
-
-  try{
-    const data={title,phone,link,description,active,updatedAt:serverTimestamp(),
-      authorUid:auth.currentUser.uid,authorEmail:auth.currentUser.email||""};
-    if(adPhotoData) data.photo=adPhotoData;
-
-    if(editId){
-      await updateDoc(doc(db,"ads",editId),data);
-      $("adStatus").textContent="✅ विज्ञापन सफलतापूर्वक Update हो गया।";
-    }else{
-      data.createdAt=serverTimestamp();
-      await addDoc(collection(db,"ads"),data);
-      $("adStatus").textContent="✅ विज्ञापन Firebase में Save हो गया।";
-    }
-    $("adStatus").style.display="block";
-    resetAdForm();
-    await loadAds();
-  }catch(err){
-    console.error(err);
-    showAdError("विज्ञापन Save नहीं हो सका: "+(err.message||err));
-  }finally{
-    $("adSaveBtn").disabled=false;
-    $("adSaveBtn").textContent="📢 विज्ञापन Save करें";
-  }
-});
-
-async function loadAds(){
-  $("adsLoading").style.display="block";
-  $("adsList").innerHTML="";
-  try{
-    const snap=await getDocs(collection(db,"ads"));
-    $("adsLoading").style.display="none";
-    if(snap.empty){
-      $("adsList").innerHTML="<p class='hint'>अभी कोई विज्ञापन सेव नहीं है।</p>";
-      return;
-    }
-    const items=[];
-    snap.forEach(item=>items.push({id:item.id,...item.data()}));
-    items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-
-    items.forEach(n=>{
-      const div=document.createElement("div");
-      div.className="ad-admin-item";
-      div.innerHTML=
-        "<h3>"+esc(n.title||"बिना नाम")+
-        (n.active
-          ? " <span class='ad-admin-status' style='background:#dcfce7;color:#166534'>ACTIVE</span>"
-          : " <span class='ad-admin-status' style='background:#fee2e2;color:#991b1b'>INACTIVE</span>")+
-        "</h3>"+
-        (n.photo ? "<img src='"+esc(n.photo)+"' alt='Advertisement'>" : "")+
-        (n.phone ? "<div class='meta'>📞 "+esc(n.phone)+"</div>" : "")+
-        (n.description ? "<p>"+esc(n.description)+"</p>" : "")+
-        "<div class='ad-admin-actions'>"+
-        "<button class='secondary adEditBtn'>✏️ Edit</button>"+
-        "<button class='publish adToggleBtn'>"+(n.active?"🔴 Inactive करें":"🟢 Active करें")+"</button>"+
-        "<button class='danger adDeleteBtn'>🗑️ Delete</button>"+
-        "</div>";
-      div.querySelector(".adEditBtn").addEventListener("click",()=>editAd(n.id,n));
-      div.querySelector(".adToggleBtn").addEventListener("click",()=>toggleAd(n.id,n.active));
-      div.querySelector(".adDeleteBtn").addEventListener("click",()=>deleteAd(n.id));
-      $("adsList").appendChild(div);
-    });
-  }catch(err){
-    $("adsLoading").style.display="none";
-    showAdError("विज्ञापन लोड नहीं हो सके: "+(err.message||err));
-  }
-}
-
-function editAd(id,n){
-  $("adEditId").value=id;
-  $("adTitle").value=n.title||"";
-  $("adPhone").value=n.phone||"";
-  $("adLink").value=n.link||"";
-  $("adDescription").value=n.description||"";
-  $("adActive").checked=n.active!==false;
-  $("adPhoto").value="";
-  adPhotoData=n.photo||"";
-  $("adPhotoPreview").innerHTML=n.photo
-    ? '<img src="'+esc(n.photo)+'" style="width:100%;max-height:240px;object-fit:cover;border-radius:10px">'
-    : "";
-  $("adSaveBtn").textContent="✏️ विज्ञापन Update करें";
-  $("adCancelBtn").style.display="inline-block";
-  window.scrollTo({top:$("adsCard").offsetTop-15,behavior:"smooth"});
-}
-
-async function toggleAd(id,current){
-  try{
-    await updateDoc(doc(db,"ads",id),{active:!current,updatedAt:serverTimestamp()});
-    await loadAds();
-  }catch(err){ showAdError("विज्ञापन की स्थिति बदल नहीं सकी: "+(err.message||err)); }
-}
-
-async function deleteAd(id){
-  if(!confirm("क्या आप यह विज्ञापन Delete करना चाहते हैं?")) return;
-  try{
-    await deleteDoc(doc(db,"ads",id));
-    alert("विज्ञापन Delete हो गया।");
-    await loadAds();
-  }catch(err){ showAdError("विज्ञापन Delete नहीं हो सका: "+(err.message||err)); }
-}
-// ================= END ADVERTISEMENT SYSTEM =================
-
-$("openAdsBtn").addEventListener("click",()=>{
-  const box = $("adsCard");
-  box.style.display = "block";
-  $("openAdsBtn").textContent = "📢 विज्ञापन सेक्शन खुला है";
-  box.scrollIntoView({behavior:"smooth",block:"start"});
-});
-
-
-onAuthStateChanged(auth,user=>{
-  if(user){
-    $("login").style.display="none";
-    $("admin").style.display="block";
-    $("newsListCard").style.display="block";
-    $("adsCard").style.display="none";
-    loadAds();
-    loadNews();
-  }else{
-    $("login").style.display="block";
-    $("admin").style.display="none";
-    $("newsListCard").style.display="none";
-    $("adsCard").style.display="none";
-  }
-});
-</script>
-</body>
-</html>
+      $("status").textContent="✅ Draft Firebase में सेव हो गया। अब नीचे स
