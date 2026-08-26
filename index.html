@@ -2275,7 +2275,12 @@ async function loadAdvertisements(){
 
 
 async function openSharedPageDirect(){
-  const id = new URLSearchParams(location.search).get("news");
+  const params = new URLSearchParams(location.search);
+  let id = params.get("news");
+  if(!id){
+    const m = window.location.pathname.match(/^\/share\/([^/]+)/?$/);
+    if(m) id = decodeURIComponent(m[1]);
+  }
   if(!id) return;
 
   try{
