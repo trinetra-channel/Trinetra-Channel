@@ -616,6 +616,37 @@ footer{
     line-height:1.9;
 }
 
+
+/* Preserve Admin rich-text formatting in published articles */
+.tn-article-body{
+  font-size:17px;
+  line-height:1.9;
+  overflow-wrap:anywhere;
+}
+.tn-article-body p{
+  margin:0 0 14px;
+}
+.tn-article-body h1,
+.tn-article-body h2,
+.tn-article-body h3,
+.tn-article-body h4{
+  margin:16px 0 10px;
+  line-height:1.4;
+}
+.tn-article-body ul,
+.tn-article-body ol{
+  margin:10px 0 14px 24px;
+  padding:0;
+}
+.tn-article-body li{
+  margin:5px 0;
+}
+.tn-article-body strong,
+.tn-article-body b{
+  font-weight:800;
+}
+
+
 /* SEARCH RESULT */
 .search-results{
     display:none;
@@ -1636,7 +1667,15 @@ function openArticleFromNews(n){
   mount.querySelector(".tn-article-title").textContent = n.title || "बिना शीर्षक";
   mount.querySelector(".tn-article-meta").textContent =
     "🕒 " + date + " | 📰 Trinetra Channel";
-  document.getElementById("pageArticleBody").textContent = n.body || "";
+  const articleBody = document.getElementById("pageArticleBody");
+  if(articleBody){
+    if(n.bodyHtml){
+      articleBody.innerHTML = n.bodyHtml;
+    }else{
+      articleBody.textContent = n.body || "";
+      articleBody.style.whiteSpace = "pre-wrap";
+    }
+  }
 
   // Show the article's actual Firebase photo.
   const hero = document.getElementById("pageArticleHero");
