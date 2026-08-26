@@ -968,6 +968,35 @@ linear-gradient(135deg,#9ca3af,#1f2937);}
 
 
 
+/* Show all photos uploaded with a news article */
+.tn-article-photo-gallery{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin:0 auto 18px;
+  max-width:900px;
+}
+.tn-article-photo-gallery img{
+  width:100%;
+  max-height:700px;
+  height:auto;
+  object-fit:contain;
+  display:block;
+  margin:0 auto;
+  border-radius:6px;
+  background:#f8fafc;
+}
+@media(min-width:700px){
+  .tn-article-photo-gallery{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+@media(max-width:699px){
+  .tn-article-photo-gallery{
+    grid-template-columns:1fr;
+  }
+}
+
 /* Preserve Admin rich-text formatting in published articles */
 .tn-article-body{
   font-size:17px;
@@ -1611,10 +1640,26 @@ function openArticleFromNews(n){
 
   const category = categoryLabel(n);
   const date = newsDate(n);
-  // Use the same photo resolver as the homepage cards, so whichever
-  // Firebase photo field the existing news uses is shown here too.
-  const mainPhoto = getPhoto(n);
-  const photos = mainPhoto ? [mainPhoto] : [];
+  // Use every photo saved by the Admin, while keeping the first photo
+  // as the main/hero image. Older news with only one photo still work.
+  const photos = [];
+  const addPhoto = (v) => {
+    if(typeof v === "string" && v.trim()){
+      const u = v.trim().replace(/\\s+/g,"");
+      if(!photos.includes(u)) photos.push(u);
+      return;
+    }
+    if(v && typeof v === "object"){
+      const u = v.url || v.src || v.downloadURL || v.downloadUrl ||
+                v.imageUrl || v.imageURL || v.photoUrl || v.photoURL;
+      if(u) addPhoto(String(u));
+    }
+  };
+  [n.photo,n.image,n.imageUrl,n.imageURL,n.photoUrl,n.photoURL].forEach(addPhoto);
+  if(Array.isArray(n.photos)) n.photos.forEach(addPhoto);
+  else addPhoto(n.photos);
+  if(Array.isArray(n.images)) n.images.forEach(addPhoto);
+  else addPhoto(n.images);
 
   mount.innerHTML = `
     <article class="tn-article-main">
@@ -1624,6 +1669,7 @@ function openArticleFromNews(n){
       <div class="tn-article-meta"></div>
 
       <img class="tn-article-hero" id="pageArticleHero" alt="" style="display:none;">
+      <div id="pageArticlePhotoGallery" class="tn-article-photo-gallery" style="display:none;"></div>
 
       <div class="tn-article-share">
         <button type="button" class="tn-share-btn red" onclick="shareCurrentNews()">📤 खबर शेयर करें</button>
@@ -1662,17 +1708,32 @@ function openArticleFromNews(n){
     }
   }
 
-  // Show the article's actual Firebase photo.
+  // Show all photos uploaded for this news item.
   const hero = document.getElementById("pageArticleHero");
+  const gallery = document.getElementById("pageArticlePhotoGallery");
+
   if(photos[0]){
     hero.style.display = "block";
-    // setNewsImage() lives inside the Firebase module, so use the resolved
-    // URL directly here. This is the same resolved photo used by the cards.
     hero.src = photos[0];
     hero.onerror = function(){
       this.style.display = "none";
       console.error("Article photo failed:", photos[0]);
     };
+  }
+
+  if(gallery && photos.length > 1){
+    gallery.style.display = "grid";
+    gallery.innerHTML = "";
+    photos.slice(1).forEach((photoUrl, index) => {
+      const img = document.createElement("img");
+      img.src = photoUrl;
+      img.alt = (n.title || "खबर") + " फोटो " + (index + 2);
+      img.loading = "lazy";
+      img.onerror = function(){
+        this.remove();
+      };
+      gallery.appendChild(img);
+    });
   }
 
   // Show the other news below the advertisement.
