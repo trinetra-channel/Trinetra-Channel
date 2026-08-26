@@ -1512,7 +1512,7 @@ function shareCurrentNews(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   const data={
@@ -1538,7 +1538,7 @@ function copyCurrentNewsLink(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   if(navigator.clipboard){
