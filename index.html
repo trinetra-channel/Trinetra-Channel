@@ -616,6 +616,37 @@ footer{
     line-height:1.9;
 }
 
+
+/* Preserve Admin rich-text formatting in published articles */
+.tn-article-body{
+  font-size:17px;
+  line-height:1.9;
+  overflow-wrap:anywhere;
+}
+.tn-article-body p{
+  margin:0 0 14px;
+}
+.tn-article-body h1,
+.tn-article-body h2,
+.tn-article-body h3,
+.tn-article-body h4{
+  margin:16px 0 10px;
+  line-height:1.4;
+}
+.tn-article-body ul,
+.tn-article-body ol{
+  margin:10px 0 14px 24px;
+  padding:0;
+}
+.tn-article-body li{
+  margin:5px 0;
+}
+.tn-article-body strong,
+.tn-article-body b{
+  font-weight:800;
+}
+
+
 /* SEARCH RESULT */
 .search-results{
     display:none;
@@ -964,80 +995,6 @@ linear-gradient(135deg,#9ca3af,#1f2937);}
     height:190px !important;
     max-height:190px !important;
   }
-}
-
-
-
-/* Show all photos uploaded with a news article */
-.tn-article-photo-gallery{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:14px;
-  margin:0 auto 18px;
-  max-width:900px;
-}
-.tn-article-photo-gallery img{
-  width:100%;
-  max-height:700px;
-  height:auto;
-  object-fit:contain;
-  display:block;
-  margin:0 auto;
-  border-radius:6px;
-  background:#f8fafc;
-}
-@media(min-width:700px){
-  .tn-article-photo-gallery{
-    grid-template-columns:repeat(2,1fr);
-  }
-}
-@media(max-width:699px){
-  .tn-article-photo-gallery{
-    grid-template-columns:1fr;
-  }
-}
-
-/* Preserve Admin rich-text formatting in published articles */
-.tn-article-body{
-  font-size:17px;
-  line-height:1.9;
-  overflow-wrap:anywhere;
-}
-.tn-article-body p{margin:0 0 14px;}
-.tn-article-body h1,.tn-article-body h2,.tn-article-body h3,.tn-article-body h4{
-  margin:16px 0 10px;
-  line-height:1.4;
-}
-.tn-article-body ul,.tn-article-body ol{margin:10px 0 14px 24px;padding:0;}
-.tn-article-body li{margin:5px 0;}
-.tn-article-body strong,.tn-article-body b{font-weight:800;}
-
-/* Light Trinetra Channel watermark on article photos only */
-.tn-photo-watermark{
-  position:relative;
-  display:block;
-  overflow:hidden;
-  border-radius:8px;
-}
-.tn-photo-watermark::after{
-  content:"TRINETRA CHANNEL";
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%) rotate(-28deg);
-  color:rgba(255,255,255,.28);
-  font-size:28px;
-  font-weight:800;
-  letter-spacing:1px;
-  white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,0,0,.18);
-  pointer-events:none;
-  user-select:none;
-}
-.tn-photo-watermark img{
-  display:block;
-  width:100%;
-  height:auto;
 }
 
 </style>
@@ -1570,7 +1527,7 @@ function shareCurrentNews(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   const data={
@@ -1596,7 +1553,7 @@ function copyCurrentNewsLink(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   if(navigator.clipboard){
@@ -1669,26 +1626,10 @@ function openArticleFromNews(n){
 
   const category = categoryLabel(n);
   const date = newsDate(n);
-  // Use every photo saved by the Admin, while keeping the first photo
-  // as the main/hero image. Older news with only one photo still work.
-  const photos = [];
-  const addPhoto = (v) => {
-    if(typeof v === "string" && v.trim()){
-      const u = v.trim().replace(/\\s+/g,"");
-      if(!photos.includes(u)) photos.push(u);
-      return;
-    }
-    if(v && typeof v === "object"){
-      const u = v.url || v.src || v.downloadURL || v.downloadUrl ||
-                v.imageUrl || v.imageURL || v.photoUrl || v.photoURL;
-      if(u) addPhoto(String(u));
-    }
-  };
-  [n.photo,n.image,n.imageUrl,n.imageURL,n.photoUrl,n.photoURL].forEach(addPhoto);
-  if(Array.isArray(n.photos)) n.photos.forEach(addPhoto);
-  else addPhoto(n.photos);
-  if(Array.isArray(n.images)) n.images.forEach(addPhoto);
-  else addPhoto(n.images);
+  // Use the same photo resolver as the homepage cards, so whichever
+  // Firebase photo field the existing news uses is shown here too.
+  const mainPhoto = getPhoto(n);
+  const photos = mainPhoto ? [mainPhoto] : [];
 
   mount.innerHTML = `
     <article class="tn-article-main">
@@ -1697,10 +1638,7 @@ function openArticleFromNews(n){
       <h1 class="tn-article-title"></h1>
       <div class="tn-article-meta"></div>
 
-      <div class="tn-photo-watermark" id="pageArticleHeroWrap" style="display:none;">
-        <img class="tn-article-hero" id="pageArticleHero" alt="">
-      </div>
-      <div id="pageArticlePhotoGallery" class="tn-article-photo-gallery" style="display:none;"></div>
+      <img class="tn-article-hero" id="pageArticleHero" alt="" style="display:none;">
 
       <div class="tn-article-share">
         <button type="button" class="tn-share-btn red" onclick="shareCurrentNews()">📤 खबर शेयर करें</button>
@@ -1739,36 +1677,17 @@ function openArticleFromNews(n){
     }
   }
 
-  // Show all photos uploaded for this news item.
+  // Show the article's actual Firebase photo.
   const hero = document.getElementById("pageArticleHero");
-  const heroWrap = document.getElementById("pageArticleHeroWrap");
-  const gallery = document.getElementById("pageArticlePhotoGallery");
-
   if(photos[0]){
-    heroWrap.style.display = "block";
+    hero.style.display = "block";
+    // setNewsImage() lives inside the Firebase module, so use the resolved
+    // URL directly here. This is the same resolved photo used by the cards.
     hero.src = photos[0];
     hero.onerror = function(){
-      heroWrap.style.display = "none";
+      this.style.display = "none";
       console.error("Article photo failed:", photos[0]);
     };
-  }
-
-  if(gallery && photos.length > 1){
-    gallery.style.display = "grid";
-    gallery.innerHTML = "";
-    photos.slice(1).forEach((photoUrl, index) => {
-      const wrap = document.createElement("div");
-      wrap.className = "tn-photo-watermark";
-      const img = document.createElement("img");
-      img.src = photoUrl;
-      img.alt = (n.title || "खबर") + " फोटो " + (index + 2);
-      img.loading = "lazy";
-      img.onerror = function(){
-        wrap.remove();
-      };
-      wrap.appendChild(img);
-      gallery.appendChild(wrap);
-    });
   }
 
   // Show the other news below the advertisement.
