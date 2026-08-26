@@ -1570,7 +1570,7 @@ function shareCurrentNews(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   const data={
@@ -1596,7 +1596,7 @@ function copyCurrentNewsLink(){
   if(!id) return;
 
   const url =
-    "https://trinetrachannel.in/?news=" +
+    "https://trinetrachannel.in/share/" +
     encodeURIComponent(id);
 
   if(navigator.clipboard){
@@ -1788,6 +1788,21 @@ function openArticleFromNews(n){
 
   window.scrollTo({top:0, behavior:"smooth"});
   document.title = (n.title || "खबर") + " | Trinetra Channel";
+
+  // Update preview metadata for clients/browsers that read the DOM after load.
+  const previewPhoto = photos[0] || "https://trinetrachannel.in/logo.png";
+  const setMeta = (property, content) => {
+    let el = document.querySelector('meta[property="' + property + '"]');
+    if(!el){
+      el = document.createElement("meta");
+      el.setAttribute("property", property);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", content);
+  };
+  setMeta("og:title", n.title || "Trinetra Channel");
+  setMeta("og:image", previewPhoto);
+  setMeta("og:url", "https://trinetrachannel.in/share/" + encodeURIComponent(n.id));
 }
 
 /* ARTICLE CLOSE */
@@ -2275,12 +2290,15 @@ async function loadAdvertisements(){
 
 
 async function openSharedPageDirect(){
+  // Support both the existing /share/ID link and ?news=ID.
   const params = new URLSearchParams(location.search);
-  let id = params.get("news");
+  let id = params.get("news") || "";
+
   if(!id){
-    const m = window.location.pathname.match(/^\/share\/([^/]+)/?$/);
+    const m = window.location.pathname.match(/\/share\/([^/]+)/i);
     if(m) id = decodeURIComponent(m[1]);
   }
+
   if(!id) return;
 
   try{
@@ -2290,6 +2308,11 @@ async function openSharedPageDirect(){
 
     const n = {id:doc.id, ...doc.data()};
     openArticleFromNews(n);
+
+    // Keep the browser URL as the share URL while rendering the full article page.
+    if(window.location.pathname.toLowerCase().startsWith("/share/")){
+      history.replaceState({}, document.title, "/share/" + encodeURIComponent(id));
+    }
   }catch(e){
     console.error("share page error",e);
   }
