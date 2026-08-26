@@ -2275,14 +2275,7 @@ async function loadAdvertisements(){
 
 
 async function openSharedPageDirect(){
-  const params = new URLSearchParams(location.search);
-  let id = params.get("news");
-  // Also support old /share/ID links so previously copied links
-  // open the full article page instead of the legacy popup.
-  if(!id){
-    const m = location.pathname.match(/^\/share\/([^/]+)\/?$/);
-    if(m) id = decodeURIComponent(m[1]);
-  }
+  const id = new URLSearchParams(location.search).get("news");
   if(!id) return;
 
   try{
