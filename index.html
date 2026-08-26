@@ -1011,6 +1011,35 @@ linear-gradient(135deg,#9ca3af,#1f2937);}
 .tn-article-body ul,.tn-article-body ol{margin:10px 0 14px 24px;padding:0;}
 .tn-article-body li{margin:5px 0;}
 .tn-article-body strong,.tn-article-body b{font-weight:800;}
+
+/* Light Trinetra Channel watermark on article photos only */
+.tn-photo-watermark{
+  position:relative;
+  display:block;
+  overflow:hidden;
+  border-radius:8px;
+}
+.tn-photo-watermark::after{
+  content:"TRINETRA CHANNEL";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) rotate(-28deg);
+  color:rgba(255,255,255,.28);
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:1px;
+  white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
+  pointer-events:none;
+  user-select:none;
+}
+.tn-photo-watermark img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
 </style>
 <script async
 src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8892976990257509"
@@ -1668,7 +1697,9 @@ function openArticleFromNews(n){
       <h1 class="tn-article-title"></h1>
       <div class="tn-article-meta"></div>
 
-      <img class="tn-article-hero" id="pageArticleHero" alt="" style="display:none;">
+      <div class="tn-photo-watermark" id="pageArticleHeroWrap" style="display:none;">
+        <img class="tn-article-hero" id="pageArticleHero" alt="">
+      </div>
       <div id="pageArticlePhotoGallery" class="tn-article-photo-gallery" style="display:none;"></div>
 
       <div class="tn-article-share">
@@ -1710,13 +1741,14 @@ function openArticleFromNews(n){
 
   // Show all photos uploaded for this news item.
   const hero = document.getElementById("pageArticleHero");
+  const heroWrap = document.getElementById("pageArticleHeroWrap");
   const gallery = document.getElementById("pageArticlePhotoGallery");
 
   if(photos[0]){
-    hero.style.display = "block";
+    heroWrap.style.display = "block";
     hero.src = photos[0];
     hero.onerror = function(){
-      this.style.display = "none";
+      heroWrap.style.display = "none";
       console.error("Article photo failed:", photos[0]);
     };
   }
@@ -1725,14 +1757,17 @@ function openArticleFromNews(n){
     gallery.style.display = "grid";
     gallery.innerHTML = "";
     photos.slice(1).forEach((photoUrl, index) => {
+      const wrap = document.createElement("div");
+      wrap.className = "tn-photo-watermark";
       const img = document.createElement("img");
       img.src = photoUrl;
       img.alt = (n.title || "खबर") + " फोटो " + (index + 2);
       img.loading = "lazy";
       img.onerror = function(){
-        this.remove();
+        wrap.remove();
       };
-      gallery.appendChild(img);
+      wrap.appendChild(img);
+      gallery.appendChild(wrap);
     });
   }
 
