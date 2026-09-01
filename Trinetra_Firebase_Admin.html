@@ -191,9 +191,12 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:800;cursor:poin
   <textarea id="body" style="display:none"></textarea>
   <div class="hint">किसी शब्द/लाइन को select करके <b>B</b> दबाएँ — वह Bold हो जाएगी।</div>
 
-  <label>📷 फोटो (अधिकतम 3)</label>
-  <input id="photo" type="file" accept="image/*" multiple>
-  <div class="hint">1, 2 या 3 फोटो एक साथ चुन सकते हैं।</div>
+  <label>📷 खबर की फोटो (अधिकतम 3)</label>
+  <input id="photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+  <button type="button" id="addPhotoBtn" class="secondary" style="width:100%;margin-top:2px">
+    ➕ फोटो जोड़ें
+  </button>
+  <div class="hint">एक-एक करके फोटो चुनें। अधिकतम 3 फोटो जोड़ सकते हैं।</div>
   <div id="photoInfo" class="meta"></div>
   <div id="photoPreview" class="photo-grid"></div>
 
@@ -404,12 +407,13 @@ function preview(){
     renderBodyHtml(editorHtml(), $("body").value || "खबर का preview यहाँ आएगा।");
 }
 
+let selectedPhotoFiles = [];
+
 function previewPhotos(){
-  const files=Array.from($("photo").files || []).slice(0,3);
   const box=$("photoPreview");
   box.innerHTML="";
 
-  files.forEach((file,i)=>{
+  selectedPhotoFiles.forEach((file,i)=>{
     const url=URL.createObjectURL(file);
     const div=document.createElement("div");
     div.className="photo-thumb";
@@ -431,11 +435,7 @@ function previewPhotos(){
     remove.setAttribute("aria-label","यह फोटो हटाएं");
 
     remove.addEventListener("click",()=>{
-      const dt=new DataTransfer();
-      Array.from($("photo").files || []).forEach((f,index)=>{
-        if(index!==i) dt.items.add(f);
-      });
-      $("photo").files=dt.files;
+      selectedPhotoFiles.splice(i,1);
       previewPhotos();
     });
 
@@ -445,11 +445,39 @@ function previewPhotos(){
     box.appendChild(div);
   });
 
-  $("photoInfo").textContent=files.length
-    ? `${files.length} फोटो चुनी गई हैं। फोटो हटाने के लिए लाल × दबाएँ।`
+  $("photoInfo").textContent=selectedPhotoFiles.length
+    ? `${selectedPhotoFiles.length} फोटो चुनी गई हैं। + फोटो जोड़ें से और फोटो जोड़ें।`
     : "कोई फोटो चयनित नहीं है।";
+
+  $("addPhotoBtn").textContent = selectedPhotoFiles.length >= 3
+    ? "✅ 3 फोटो पूरी हो गईं"
+    : "➕ फोटो जोड़ें";
+  $("addPhotoBtn").disabled = selectedPhotoFiles.length >= 3;
 }
-$("photo").addEventListener("change",previewPhotos);
+
+$("addPhotoBtn").addEventListener("click",()=>{
+  if(selectedPhotoFiles.length >= 3) return;
+  $("photo").click();
+});
+
+$("photo").addEventListener("change",()=>{
+  const file=$("photo").files?.[0];
+  $("photo").value="";
+  if(!file) return;
+
+  if(selectedPhotoFiles.length >= 3){
+    $("photoInfo").textContent="अधिकतम 3 फोटो ही जोड़ी जा सकती हैं।";
+    return;
+  }
+
+  if(file.size > 700 * 1024){
+    showError("saveError","फोटो 700 KB से छोटी रखें।");
+    return;
+  }
+
+  selectedPhotoFiles.push(file);
+  previewPhotos();
+});
 
 ["title","place","date","authorName","category"].forEach(id => $(id).addEventListener("input",preview));
 preview();
@@ -608,8 +636,11 @@ function resetForm(){
   $("authorName").value="";
   $("body").value="";
   $("bodyEditor").innerHTML="";
+  selectedPhotoFiles = [];
   $("photo").value="";
   $("photoPreview").innerHTML="";
+  $("addPhotoBtn").textContent="➕ फोटो जोड़ें";
+  $("addPhotoBtn").disabled=false;
   $("video").value="";
   $("videoFileName").textContent="";
   $("videoFileRow").classList.remove("show");
@@ -670,7 +701,7 @@ $("saveBtn").addEventListener("click",async()=>{
   const authorName=$("authorName").value.trim();
   const category=$("category").value;
   const editId=$("editId").value;
-  const photoFiles=Array.from($("photo").files || []).slice(0,3);
+  const photoFiles=selectedPhotoFiles.slice(0,3);
 
   if(!title || !body){
     showError("saveError","Headline और पूरी खबर भरना जरूरी है।");
@@ -818,9 +849,12 @@ function editNews(id,n){
   $("category").value=n.category || "स्थानीय";
   $("authorName").value=n.authorName || "";
   setEditorContent(n.bodyHtml || "", n.body || "");
+  selectedPhotoFiles = [];
   $("photo").value="";
   $("photoPreview").innerHTML="";
-  $("photoInfo").textContent=(n.photos?.length || n.photo) ? "पुरानी फोटो मौजूद है। नई फोटो चुनने पर वह replace होगी।" : "";
+  $("addPhotoBtn").textContent="➕ फोटो जोड़ें";
+  $("addPhotoBtn").disabled=false;
+  $("photoInfo").textContent=(n.photos?.length || n.photo) ? "पुरानी फोटो मौजूद है। नई फोटो जोड़ने पर नई फोटो सेट सेव होगी।" : "";
   $("formHeading").textContent = n.status==="draft" ? "✏️ Draft Edit करें" : "✏️ खबर Edit करें";
   $("saveBtn").textContent="Update करें";
   $("cancelEditBtn").style.display="inline-block";
