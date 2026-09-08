@@ -1145,9 +1145,6 @@ function goToSection(id){
     <button type="button" onclick="shareCurrentNews()" style="background:#b91c1c;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-weight:800;cursor:pointer;">📤 खबर शेयर करें</button>
     <button type="button" onclick="copyCurrentNewsLink()" style="background:#333;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-weight:800;cursor:pointer;">🔗 Link Copy</button>
   </div>
-  <div style="min-height:100px;margin:22px 0;text-align:center;">
-    <ins class="adsbygoogle" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
-  </div>
   <div class="section-title"><h2>📰 नीचे पढ़ें — अन्य खबरें</h2></div>
   <div id="sharedRelated" class="news-grid"></div>
 </section>
@@ -1159,123 +1156,25 @@ function goToSection(id){
 <div id="searchResults" class="search-results"></div>
 
 <!-- TOP NEWS -->
+<!-- Real news is populated from Firebase. No placeholder/empty news is rendered. -->
 <div class="section-title">
     <h2>बड़ी खबर</h2>
     <a href="#">सभी खबरें →</a>
 </div>
 
-<div class="hero">
+<div class="hero" id="topNewsHero">
 
-    <article class="hero-main"
-             onclick="openArticle(
-             'प्रतापगढ़ की बड़ी खबर',
-             'प्रतापगढ़',
-             'आज की महत्वपूर्ण स्थानीय खबर Trinetra Channel पर पढ़िए।')">
-
+    <article class="hero-main" style="display:none;">
         <div class="hero-image"></div>
 
         <div class="hero-content">
-
-            <span class="category">
-                प्रतापगढ़
-            </span>
-
-            <h2>
-                प्रतापगढ़ की ताजा और बड़ी खबर
-            </h2>
-
-            <p>
-                आपके शहर, गांव और क्षेत्र की खबर सबसे पहले।
-            </p>
-
+            <span class="category"></span>
+            <h2></h2>
+            <p></p>
         </div>
-
     </article>
 
-
-    <div class="side-news">
-
-        <article class="side-card"
-                 onclick="openArticle(
-                 'उत्तर प्रदेश की बड़ी खबर',
-                 'उत्तर प्रदेश',
-                 'उत्तर प्रदेश से जुड़ी महत्वपूर्ण खबर और पूरी जानकारी यहां पढ़ें।')">
-
-            <div class="side-thumb"></div>
-
-            <div class="side-content">
-
-                <span class="category">
-                    उत्तर प्रदेश
-                </span>
-
-                <h3>
-                    उत्तर प्रदेश से आज की बड़ी खबर
-                </h3>
-
-                <small>
-                    आज की खबर
-                </small>
-
-            </div>
-
-        </article>
-
-
-        <article class="side-card"
-                 onclick="openArticle(
-                 'देश की बड़ी खबर',
-                 'देश',
-                 'देशभर की महत्वपूर्ण खबरों का पूरा विवरण।')">
-
-            <div class="side-thumb"></div>
-
-            <div class="side-content">
-
-                <span class="category">
-                    देश
-                </span>
-
-                <h3>
-                    देशभर से सामने आई महत्वपूर्ण खबर
-                </h3>
-
-                <small>
-                    राष्ट्रीय समाचार
-                </small>
-
-            </div>
-
-        </article>
-
-
-        <article class="side-card"
-                 onclick="openArticle(
-                 'आज की ताजा खबर',
-                 'Breaking',
-                 'Trinetra Channel पर आज की ताजा जानकारी पढ़ें।')">
-
-            <div class="side-thumb"></div>
-
-            <div class="side-content">
-
-                <span class="category">
-                    Breaking
-                </span>
-
-                <h3>
-                    आज की ताजा खबर यहां पढ़ें
-                </h3>
-
-                <small>
-                    अभी-अभी
-                </small>
-
-            </div>
-
-        </article>
-
-    </div>
+    <div class="side-news"></div>
 
 </div>
 
@@ -1648,15 +1547,6 @@ function openArticleFromNews(n){
       <div class="tn-article-body" id="pageArticleBody"></div>
     </article>
 
-    <div class="tn-side-box" style="margin-top:18px;">
-      <h2 class="tn-side-title">Advertisement</h2>
-      <div class="tn-ad-box">
-        <ins class="adsbygoogle"
-             style="display:block;width:100%;min-height:180px"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-      </div>
-    </div>
 
     <div class="tn-related-section">
       <div class="section-title"><h2>📰 बाकी खबरें</h2></div>
@@ -1700,10 +1590,6 @@ function openArticleFromNews(n){
       related.innerHTML = '<p class="status">अभी कोई अन्य खबर उपलब्ध नहीं है।</p>';
     }
   }
-
-  try{
-    (adsbygoogle = window.adsbygoogle || []).push({});
-  }catch(e){}
 
   window.scrollTo({top:0, behavior:"smooth"});
   document.title = (n.title || "खबर") + " | Trinetra Channel";
@@ -2043,6 +1929,7 @@ function renderNews(){
   const heroEl = document.querySelector(".hero-main");
   if(heroEl){
     if(hero){
+      heroEl.style.display = "block";
       heroEl.onclick = () => openArticleFromNews(hero);
       const bg = heroEl.querySelector(".hero-image");
       const photo = getPhoto(hero);
@@ -2065,7 +1952,9 @@ function renderNews(){
   const side = document.querySelector(".side-news");
   if(side){
     side.innerHTML = "";
-    news.slice(1,4).forEach(n => side.appendChild(makeSideCard(n)));
+    const sideItems = news.slice(1,4);
+    sideItems.forEach(n => side.appendChild(makeSideCard(n)));
+    side.style.display = sideItems.length ? "grid" : "none";
   }
 
   const pratap = clearGrid("pratapgarhGrid") || document.querySelector("#pratapgarh .news-grid");
