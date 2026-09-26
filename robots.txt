@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /Trinetra_Firebase_Admin.html
+Disallow: /admin/
+Sitemap: https://trinetrachannel.in/sitemap.xml
